@@ -1,6 +1,5 @@
+#!/usr/bin/php
 <?php
-# В качестве рагумента получаем номер телефона
-$user_phone_number = (int) $argv[1];
 # URL Api endpoint для полученич ID по номеру телефона
 $url_get_id = (string) 'https://manager.sohonet.ua/api/clients/check-number?number=';
 # URL Api endpoint для получения информации по ID
@@ -10,11 +9,27 @@ $ids = array();
 #Строка возвращаемая скриптом которая содержит номера ID и баланс
 $result_string = "";
 
+#Определяем как передан номер телефона
+if ($argv[1] !=0) {
+    $user_phone_number = $argv[1];
+} elseif ($_GET["phone"] != 0){
+    $user_phone_number = $_GET["phone"];
+} else {
+    echo "no data";
+    return;
+}
+
+$user_phone_number = trim($user_phone_number);
+if (strlen($user_phone_number) > 12) {
+    $user_phone_number = substr($user_phone_number, strlen($user_phone_number) - 12);
+} elseif (strlen($user_phone_number) == 10) {
+    $user_phone_number = "38" . $user_phone_number;
+}
 #Запрос Json строки содержащей ID
 $string_response = get_data_from_url($url_get_id, $user_phone_number);
 #Проверка наличия телефона в базе "Менеджера" по возвращенной строке
 if (strpos($string_response ,'Check number')) {
-    echo "Информация отсутствует \n";
+    echo "no data";
     return;
 }
 #Преобразование Json строки в массив
@@ -23,23 +38,24 @@ $json_response = json_decode($string_response, true);
 get_id_Array_from_Json_Array($json_response);
 #Проверка массива ID на наличие хотя бы одного значения
 if ($ids == null) {
-    echo "Информация отсутствует \n";
+    echo "no data";
+    return;
 }
 #Формирование строки которая содержит номера ID и баланс
 foreach ($ids as $key => $value) {
     $string_with_bill = get_data_from_url($url_get_status, $value);
     $json_with_bill = json_decode($string_with_bill, true);
     $balance = get_client_balance($json_with_bill);
-    $result_string = $result_string . '(id: ' . $value . ', bal.: '. $balance .' грн.) ';
+    $result_string = $result_string . '(id:' . $value . ', b:'. $balance .' UAH)';
 }
 #Возвращение результата
-echo $result_string . "\n";
+echo $result_string ;
 
 
 
 #Функция возвращающая баланс клиента из Json массива
 function get_client_balance($json_array) {
-    $balance =round($json_array['data']['bill'], 2);
+    $balance =round($json_array['data']['bill'], 0);
     return $balance;
 }
 #Функция возвращающая массив ID из Json массива
