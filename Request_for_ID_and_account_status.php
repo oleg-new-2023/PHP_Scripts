@@ -1,4 +1,3 @@
-#!/usr/bin/php
 <?php
 # URL Api endpoint для полученич ID по номеру телефона
 $url_get_id = (string) 'https://manager.sohonet.ua/api/clients/check-number?number=';
@@ -18,13 +17,16 @@ if ($argv[1] !=0) {
     echo "no data";
     return;
 }
-
+# Добалляем недостающие либо убирау излишние символы, приведя строку к виду : 380XXXXXXXXX
 $user_phone_number = trim($user_phone_number);
 if (strlen($user_phone_number) > 12) {
     $user_phone_number = substr($user_phone_number, strlen($user_phone_number) - 12);
 } elseif (strlen($user_phone_number) == 10) {
     $user_phone_number = "38" . $user_phone_number;
+}elseif (strlen($user_phone_number) == 9) {
+    $user_phone_number = "380" . $user_phone_number;
 }
+
 #Запрос Json строки содержащей ID
 $string_response = get_data_from_url($url_get_id, $user_phone_number);
 #Проверка наличия телефона в базе "Менеджера" по возвращенной строке
@@ -46,7 +48,7 @@ foreach ($ids as $key => $value) {
     $string_with_bill = get_data_from_url($url_get_status, $value);
     $json_with_bill = json_decode($string_with_bill, true);
     $balance = get_client_balance($json_with_bill);
-    $result_string = $result_string . '(id:' . $value . ', b:'. $balance .' UAH)';
+    $result_string .= '(id:'. $value . ';'. $balance .'₴)';
 }
 #Возвращение результата
 echo $result_string ;
